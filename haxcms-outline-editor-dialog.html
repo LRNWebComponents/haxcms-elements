@@ -26,7 +26,7 @@ Dialog for presenting an editable outline
         border-radius: 16px;
       }
     </style>
-    <paper-dialog id="outlineeditor" opened="{{opened}}" modal>
+    <paper-dialog id="outlineeditor" opened="{{opened}}" with-backdrop>
       <paper-dialog-scrollable>
         <lrnsys-outline items="{{items}}" id="outline"></lrnsys-outline>
       </paper-dialog-scrollable>
@@ -41,7 +41,6 @@ Dialog for presenting an editable outline
       is: 'haxcms-outline-editor-dialog',
       listeners: {
         'save.tap': '_saveTap',
-        'cancel.tap': '_cancelTap',
       },
       properties: {
         /**
@@ -65,6 +64,7 @@ Dialog for presenting an editable outline
        */
       ready: function () {
         document.body.addEventListener('json-outline-schema-changed', this._manifestChanged.bind(this));
+        // state issue but it can miss in timing othewise on first event
         this.set('items', Polymer.cmsSiteEditor.jsonOutlineSchema.items);
       },
       /**

@@ -16,7 +16,6 @@
 <link rel="import" href="../app-layout/app-header/app-header.html">
 <link rel="import" href="../app-layout/app-toolbar/app-toolbar.html">
 <link rel="import" href="../app-layout/app-drawer/app-drawer.html">
-<link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
 <link rel="import" href="../iron-icons/editor-icons.html">
 <link rel="import" href="../iron-icons/notification-icons.html">
@@ -140,7 +139,8 @@ A LRN element
     <paper-dialog id="newdialog" with-backdrop>
       <h3>Create new site</h3>
       <paper-dialog-scrollable>
-        <paper-input id="newsitename" label="Name" required autofocus></paper-input>
+        <paper-input id="newsitetitle" label="Title" required autofocus value="{{siteTitle}}"></paper-input>
+        <paper-input id="domain" label="Domain" required value="[[domainName]]"></paper-input>
         <paper-input id="newsitedescription" label="Description"></paper-input>
         <paper-input id="newsiteimage" label="Image" value="[[activeItem.metadata.image]]"></paper-input>
         <label for="newsitecolor">Select a color:</label>
@@ -148,6 +148,7 @@ A LRN element
         <dropdown-select id="newsitetheme" label="Theme" value="simple-blog">
           <paper-item value="simple-blog">Simple blog</paper-item>
           <paper-item value="outline-player">Basic outline</paper-item>
+          <paper-item value="haxcms-dev-theme">DEVELOPER THEME</paper-item>
           <paper-item value="infinite-scroll">Infinite scroll</paper-item>
         </dropdown-select>
         <label for="newsiteicon">Select an icon:</label>
@@ -206,6 +207,19 @@ A LRN element
         title: {
           type: String,
           value: 'Site list'
+        },
+        /**
+         * Site title
+         */
+        siteTitle: {
+          type: String,
+        },
+        /**
+         * Domain name
+         */
+        domainName: {
+          type: String,
+          computed: '_computeDomainName(siteTitle)',
         },
         /**
          * Sites response change
@@ -274,6 +288,12 @@ A LRN element
           value: false,
           observer: '_editModeChanged',
         },
+      },
+      /**
+       * Generate domain from title
+       */
+      _computeDomainName: function (title) {
+        return 'https://' + title.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() + '.surge.sh';
       },
       /**
        * Site response has changed.
@@ -440,8 +460,20 @@ A LRN element
        * Simple method of loading whatever's been dictated as active.
        */
       loadActiveSite: function (e) {
-        // @todo load the site via routing when we wire that up
-        window.open(e.detail.location);
+        let findSite = this.__sites.filter(site => {
+          if (site.id !== e.detail.id) {
+            return false;
+          }
+          return true;
+        });
+        let item = findSite.pop();
+        // if location isn't there, push out to it
+        if (item.location) {
+          window.open(item.location);
+        }
+        else {
+          window.open('/_sites/' + item.metadata.siteName + '/index.html');
+        }
       },
       /**
        * New button clicked, open modal
@@ -455,7 +487,8 @@ A LRN element
        */
       _createSite: function (e) {
         // ship off a new call
-        this.set('createParams.siteName', this.$.newsitename.value);
+        this.set('createParams.domain', this.$.domain.value);
+        this.set('createParams.siteName', this.$.newsitetitle.value);
         this.set('createParams.description', this.$.newsitedescription.value);
         // need to pull this from the active item bc of data binding silly
         this.set('createParams.theme', this.activeItem.metadata.theme);
@@ -465,7 +498,7 @@ A LRN element
         this.set('createParams.icon', this.$.newsiteicon.icon);
         // pass along the jwt for user "session" purposes
         this.set('createParams.jwt', this.jwt);
-        this.$.newsitename.value = null;
+        this.$.newsitetitle.value = '';
         this.$.newsitedescription.value = null;
         this.$.createrequest.generateRequest();
       },
@@ -499,7 +532,7 @@ A LRN element
         document.body.appendChild(element);
         element.click();
         document.body.removeChild(element);
-        this.$.toast.show(this.activeItem.name + ' downloaded successfully!');
+        this.$.toast.show(this.activeItem.title + ' downloaded successfully!');
       },
       /**
        * Option selected in an operation in context
